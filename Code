@@ -1,0 +1,135 @@
+using System;
+using System.Data;
+using System.Net;
+using HtmlAgilityPack;
+using MathNet;
+using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearRegression;
+namespace WeatherGuessApp
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void btnGetData_Click(object sender, EventArgs e)
+        {
+            WebClient ClientWeather = new WebClient();
+            string WeatherSite = ClientWeather.DownloadString("https://www.hurriyet.com.tr/hava-durumu/istanbul/");
+            HtmlAgilityPack.HtmlDocument temperatures = new HtmlAgilityPack.HtmlDocument(); temperatures.LoadHtml(WeatherSite);
+
+            string firstDayMaxTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[1]/div/div[4]")[0].InnerText;
+            string secondDayMaxTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[2]/div/div[4]")[0].InnerText;
+            string thirdDayMaxTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[3]/div/div[4]")[0].InnerText;
+            string fourthDayMaxTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[2]/div/div[4]")[0].InnerText;
+
+            string firstDayMinTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[1]/div/div[5]")[0].InnerText;
+            string secondDayMinTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[2]/div/div[5]")[0].InnerText;
+            string thirdDayMinTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[3]/div/div[5]")[0].InnerText;
+            string fourthDayMinTemp = temperatures.DocumentNode.SelectNodes("//*[@id=\"weather-card-swiper\"]/div[1]/div[4]/div/div[5]")[0].InnerText;
+
+            string cleanedFirstDayMaxTemp = firstDayMaxTemp.Replace("&deg;C", "").Trim();
+            double firstDayMaxTempDouble = double.Parse(cleanedFirstDayMaxTemp);
+            txtFirstMax.Text = firstDayMaxTempDouble.ToString();
+
+            string cleanedFirstDayMinTemp = firstDayMinTemp.Replace("&deg;C", "").Trim();
+            double firstDayMinTempDouble = double.Parse(cleanedFirstDayMinTemp);
+            txtFirstMin.Text = firstDayMinTempDouble.ToString();
+
+            double FirstDayAverage = (firstDayMaxTempDouble + firstDayMinTempDouble) / 2;
+            txtFirstAverage.Text = FirstDayAverage.ToString();
+
+
+            string cleanedSecondDayMaxTemp = secondDayMaxTemp.Replace("&deg;C", "").Trim();
+            double secondDayMaxTempDouble = double.Parse(cleanedSecondDayMaxTemp);
+            txtSecondMax.Text = secondDayMaxTempDouble.ToString();
+
+            string cleanedSecondDayMinTemp = secondDayMinTemp.Replace("&deg;C", "").Trim();
+            double secondminTempDouble = double.Parse(cleanedSecondDayMinTemp);
+            txtSecondMin.Text = secondminTempDouble.ToString();
+
+            double SecondDayAverage = (secondDayMaxTempDouble + secondminTempDouble) / 2;
+            txtSecondAverage.Text = SecondDayAverage.ToString();
+
+
+            string cleanedThirdDayMaxTemp = thirdDayMaxTemp.Replace("&deg;C", "").Trim();
+            double thirdDayMaxTempDouble = double.Parse(cleanedThirdDayMaxTemp);
+            txtThirdMax.Text = thirdDayMaxTempDouble.ToString();
+
+            string cleanedThirdDayMinTemp = thirdDayMinTemp.Replace("&deg;C", "").Trim();
+            double thirdDayMinTempDouble = double.Parse(cleanedThirdDayMinTemp);
+            txtThirdMin.Text = thirdDayMinTempDouble.ToString();
+
+            double ThirdDayAverage = (thirdDayMaxTempDouble + thirdDayMinTempDouble) / 2;
+            txtThirdAverage.Text = ThirdDayAverage.ToString();
+
+
+            string cleanedFourthDayMaxTemp = fourthDayMaxTemp.Replace("&deg;C", "").Trim();
+            double fourthDayMaxTempDouble = double.Parse(cleanedFourthDayMaxTemp);
+            txtFourthMax.Text = fourthDayMaxTempDouble.ToString();
+
+            string cleanedFourthDayMinTemp = fourthDayMinTemp.Replace("&deg;C", "").Trim();
+            double fourthDayMinTempDouble = double.Parse(cleanedFourthDayMinTemp);
+            txtFourthMin.Text = fourthDayMinTempDouble.ToString();
+
+            double FourthDayAverage = (fourthDayMaxTempDouble + fourthDayMinTempDouble) / 2;
+            txtFourthAverage.Text = FourthDayAverage.ToString();
+
+
+            double[] days = new double[] { 1, 2, 3, 4 };
+            double[] maxTemperatures = new double[] { firstDayMaxTempDouble, secondDayMaxTempDouble, thirdDayMaxTempDouble, fourthDayMaxTempDouble };
+            double[] minTemperatures = new double[] { firstDayMinTempDouble, secondminTempDouble, thirdDayMinTempDouble, fourthDayMinTempDouble };
+            double[] avgTemperatures = new double[] { FirstDayAverage, SecondDayAverage, ThirdDayAverage, FourthDayAverage };
+
+            // Doğrusal regresyon modellerini oluşturma
+            (var maxA, var maxB) = Fit.Line(days, maxTemperatures);
+            (var minA, var minB) = Fit.Line(days, minTemperatures);
+            (var avgA, var avgB) = Fit.Line(days, avgTemperatures);
+
+            // Tahminleri yapma
+            double day5MaxTemp = maxA + maxB;
+            double day5MinTemp = minA + minB;
+            double day5AvgTemp = avgA + avgB;
+
+            txtFifthMax.Text = day5MaxTemp.ToString();
+            txtFifthMin.Text = day5MinTemp.ToString();
+            txtFifthAverage.Text = day5AvgTemp.ToString();
+
+            double fifthDayMaxDouble = day5MaxTemp;
+            double fifthDayMinDouble = day5MinTemp;
+            double fifthDayAvrDouble = day5AvgTemp;
+
+            double []newDays = new double[] { 1, 2, 3, 4, 5};
+            double[] maxTemperatureNew = new double[] { firstDayMaxTempDouble, secondDayMaxTempDouble, thirdDayMaxTempDouble, fourthDayMaxTempDouble, fifthDayMaxDouble } ;
+            double[] minTemperatureNew = new double[] {firstDayMaxTempDouble,secondminTempDouble,thirdDayMinTempDouble, fourthDayMinTempDouble,fifthDayMinDouble } ;
+            double[] avgTemperatureNew = new double[] { FirstDayAverage, SecondDayAverage, ThirdDayAverage, FourthDayAverage, fifthDayAvrDouble };
+
+
+            // Yeni doğrusal regresyon modellerini oluşturma
+            (var newMaxA, var newMaxB) = Fit.Line(newDays, maxTemperatureNew);
+            (var newMinA, var newMinB) = Fit.Line(newDays, minTemperatureNew);
+            (var newAvgA, var newAvgB) = Fit.Line(newDays, avgTemperatureNew);
+
+            // 6. gün için tahminler
+            double day6MaxTemp = newMaxA  + newMaxB;
+            double day6MinTemp = newMinA  + newMinB;
+            double day6AvgTemp = newAvgA  + newAvgB;
+
+            txtSixthMax.Text = day6MaxTemp.ToString();
+            txtSixthMin.Text = day6MinTemp.ToString();
+            txtSixthAverage.Text = day6AvgTemp.ToString();
+
+
+
+
+        }
+
+        private void btnGuess_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
